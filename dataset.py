@@ -4,6 +4,7 @@ from PIL import Image
 from torch.utils.data import Dataset
 import torch
 import torchvision.transforms.functional as FT
+import matplotlib.pyplot as plt
 
 from parameters import device
 
@@ -18,10 +19,10 @@ def convert_image(img):
     Accepts PIL Image
     """
     img = FT.to_tensor(img)
-    if img.ndimension() == 3:
-            img = (img - GTA_small_mean) / GTA_small_std
-    elif img.ndimension() == 4:
-        img = (img - GTA_small_mean_cuda) / GTA_small_std_cuda
+    # if img.ndimension() == 3:
+    #         img = (img - GTA_small_mean) / GTA_small_std
+    # elif img.ndimension() == 4:
+    #     img = (img - GTA_small_mean_cuda) / GTA_small_std_cuda
     return img
 
 
@@ -84,11 +85,7 @@ class GTA(Dataset):
         self.crop_size = crop_size
         self.split = split.lower()
         self.scaling_factor = scaling_factor
-        if split == 'train':
-            self.img_dir = img_dir + "x/"
-        elif split == 'test':
-            self.img_dir = img_dir + "y/"
-
+        self.img_dir = img_dir
         self.img_names = os.listdir(self.img_dir)
         
         self.transform = Transform(split, crop_size, scaling_factor)
