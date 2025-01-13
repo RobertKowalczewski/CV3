@@ -6,10 +6,11 @@ def process_image(file_info):
     input_path, output_path = file_info
 
     with Image.open(input_path) as img:
-        # Calculate new dimensions (half the original size)
-        new_width = img.width // 2
-        new_height = img.height // 2
-        resized_img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+        # Calculate new dimensions
+        resize = 4
+        new_width = img.width // resize
+        new_height = img.height // resize
+        resized_img = img.resize((new_width, new_height), Image.Resampling.BICUBIC)
 
         # Save the resized image to the output folder
         resized_img.save(output_path, "PNG")
@@ -34,6 +35,6 @@ def resize_images(input_folder, output_folder):
     print("All images resized and saved.")
 
 # Example usage
-input_folder = "C:/Users/Robert/Desktop/studia/Computer Vision/Project 3/data/GTAV/small/x"
-output_folder = "C:/Users/Robert/Desktop/studia/Computer Vision/Project 3/data/GTAV/small/y"
+input_folder = "data/GTAV/small/x"
+output_folder = "data/GTAV/small/y"
 resize_images(input_folder, output_folder)
