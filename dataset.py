@@ -14,15 +14,56 @@ GTA_small_std = torch.FloatTensor([0.25136814, 0.24611233, 0.24406359]).unsqueez
 GTA_small_mean_cuda = torch.FloatTensor([0.5083843,  0.502183,   0.48381886]).to(device).unsqueeze(0).unsqueeze(2).unsqueeze(3)
 GTA_small_std_cuda = torch.FloatTensor([0.25136814, 0.24611233, 0.24406359]).to(device).unsqueeze(0).unsqueeze(2).unsqueeze(3)
 
-def convert_image(img):
+def convert_image(img, source, target):
     """
-    Accepts PIL Image
+    Convert an image from a source format to a target format.
+
+    :param img: image
+    :param source: source format, one of 'pil' (PIL image), '[0, 1]' or '[-1, 1]' (pixel value ranges)
+    :param target: target format, one of 'pil' (PIL image), '[0, 255]', '[0, 1]', '[-1, 1]' (pixel value ranges),
+                   'imagenet-norm' (pixel values standardized by imagenet mean and std.),
+                   'y-channel' (luminance channel Y in the YCbCr color format, used to calculate PSNR and SSIM)
+    :return: converted image
     """
-    img = FT.to_tensor(img)
-    # if img.ndimension() == 3:
-    #         img = (img - GTA_small_mean) / GTA_small_std
-    # elif img.ndimension() == 4:
-    #     img = (img - GTA_small_mean_cuda) / GTA_small_std_cuda
+    assert source in {'pil', '[0, 1]', '[-1, 1]'}, "Cannot convert from source format %s!" % source
+    assert target in {'pil', '[0, 255]', '[0, 1]', '[-1, 1]', 'imagenet-norm',
+                      'y-channel'}, "Cannot convert to target format %s!" % target
+
+    # Convert from source to [0, 1]
+    if source == 'pil':
+        img = FT.to_tensor(img)
+
+    elif source == '[0, 1]':
+        pass  # already in [0, 1]
+
+    elif source == '[-1, 1]':
+        img = (img + 1.) / 2.
+
+    # Convert from [0, 1] to target
+    if target == 'pil':
+        img = FT.to_pil_image(img)
+
+    elif target == '[0, 255]':
+        img = 255. * img
+
+    elif target == '[0, 1]':
+        pass  # already in [0, 1]
+
+    elif target == '[-1, 1]':
+        img = 2. * img - 1.
+
+    elif target == 'gta-small-norm':
+        if img.ndimension() == 3:
+            img = (img - GTA_small_mean) / GTA_small_std
+        elif img.ndimension() == 4:
+            img = (img - GTA_small_mean_cuda) / GTA_small_std_cuda
+
+    # elif target == 'y-channel':
+    #     # Based on definitions at https://github.com/xinntao/BasicSR/wiki/Color-conversion-in-SR
+    #     # torch.dot() does not work the same way as numpy.dot()
+    #     # So, use torch.matmul() to find the dot product between the last dimension of an 4-D tensor and a 1-D tensor
+    #     img = torch.matmul(255. * img.permute(0, 2, 3, 1)[:, 4:-4, 4:-4, :], rgb_weights) / 255. + 16.
+
     return img
 
 
@@ -31,7 +72,7 @@ class Transform:
     Image transformation pipeline.
     """
 
-    def __init__(self, split, crop_size, scaling_factor):
+    def __init__(self, split, crop_size, scaling_factor,lr_img_type, hr_img_type):
         """
         :param split: one of 'train' or 'test'
         :param crop_size: crop size of HR images
@@ -40,6 +81,8 @@ class Transform:
         self.split = split.lower()
         self.crop_size = crop_size
         self.scaling_factor = scaling_factor
+        self.lr_img_type = lr_img_type
+        self.hr_img_type = hr_img_type
 
         assert self.split in {'train', 'test'}
 
@@ -75,20 +118,20 @@ class Transform:
         assert hr_img.width == lr_img.width * self.scaling_factor and hr_img.height == lr_img.height * self.scaling_factor
 
         # Convert the LR and HR image to the required type
-        lr_img = convert_image(lr_img)
-        hr_img = convert_image(hr_img)
+        lr_img = convert_image(lr_img, source='pil', target=self.lr_img_type)
+        hr_img = convert_image(hr_img, source='pil', target=self.hr_img_type)
 
         return lr_img, hr_img
 
 class GTA(Dataset):
-    def __init__(self, img_dir, split, crop_size, scaling_factor):
+    def __init__(self, img_dir, split, crop_size, scaling_factor,lr_img_type, hr_img_type):
         self.crop_size = crop_size
         self.split = split.lower()
         self.scaling_factor = scaling_factor
         self.img_dir = img_dir
         self.img_names = os.listdir(self.img_dir)
         
-        self.transform = Transform(split, crop_size, scaling_factor)
+        self.transform = Transform(split, crop_size, scaling_factor,lr_img_type, hr_img_type)
 
     def __len__(self):
         return len(self.img_names)
