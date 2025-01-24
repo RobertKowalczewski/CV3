@@ -173,6 +173,7 @@ class SRResNet(nn.Module):
         self.conv_block3 = ConvolutionalBlock(in_channels=n_channels, out_channels=3, kernel_size=large_kernel_size,
                                               batch_norm=False, activation='Tanh')
 
+
     def forward(self, lr_imgs):
         """
         Forward prop.

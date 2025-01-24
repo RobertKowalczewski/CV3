@@ -26,7 +26,7 @@ def convert_image(img, source, target):
     :return: converted image
     """
     assert source in {'pil', '[0, 1]', '[-1, 1]'}, "Cannot convert from source format %s!" % source
-    assert target in {'pil', '[0, 255]', '[0, 1]', '[-1, 1]', 'imagenet-norm',
+    assert target in {'pil', '[0, 255]', '[0, 1]', '[-1, 1]', 'gta-small-norm',
                       'y-channel'}, "Cannot convert to target format %s!" % target
 
     # Convert from source to [0, 1]
