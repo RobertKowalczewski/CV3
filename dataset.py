@@ -72,7 +72,7 @@ class Transform:
     Image transformation pipeline.
     """
 
-    def __init__(self, split, crop_size, scaling_factor,lr_img_type, hr_img_type):
+    def __init__(self, split, crop_size, scaling_factor,lr_img_type, hr_img_type, same_size_input = False):
         """
         :param split: one of 'train' or 'test'
         :param crop_size: crop size of HR images
@@ -83,6 +83,7 @@ class Transform:
         self.scaling_factor = scaling_factor
         self.lr_img_type = lr_img_type
         self.hr_img_type = hr_img_type
+        self.same_size_input = same_size_input
 
         assert self.split in {'train', 'test'}
 
@@ -117,6 +118,12 @@ class Transform:
         # Sanity check
         assert hr_img.width == lr_img.width * self.scaling_factor and hr_img.height == lr_img.height * self.scaling_factor
 
+        
+        # If same size input and output is enabled, upscale lr_img
+        if self.same_size_input:
+            lr_img = lr_img.resize((int(hr_img.width), int(hr_img.height)),Image.BICUBIC)
+
+
         # Convert the LR and HR image to the required type
         lr_img = convert_image(lr_img, source='pil', target=self.lr_img_type)
         hr_img = convert_image(hr_img, source='pil', target=self.hr_img_type)
@@ -124,14 +131,14 @@ class Transform:
         return lr_img, hr_img
 
 class GTA(Dataset):
-    def __init__(self, img_dir, split, crop_size, scaling_factor,lr_img_type, hr_img_type):
+    def __init__(self, img_dir, split, crop_size, scaling_factor,lr_img_type, hr_img_type, same_size_input = False):
         self.crop_size = crop_size
         self.split = split.lower()
         self.scaling_factor = scaling_factor
         self.img_dir = img_dir
         self.img_names = os.listdir(self.img_dir)
         
-        self.transform = Transform(split, crop_size, scaling_factor,lr_img_type, hr_img_type)
+        self.transform = Transform(split, crop_size, scaling_factor,lr_img_type, hr_img_type, same_size_input = same_size_input)
 
     def __len__(self):
         return len(self.img_names)
