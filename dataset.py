@@ -148,3 +148,9 @@ class GTA(Dataset):
         image = Image.open(img_path, mode='r')
         image = image.convert('RGB')
         return self.transform(image)
+    
+    def get_full_image(self, idx):
+        img_path = os.path.join(self.img_dir, self.img_names[idx])
+        image = Image.open(img_path, mode='r')
+        image = image.convert('RGB')
+        return image
