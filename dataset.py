@@ -14,6 +14,15 @@ GTA_small_std = torch.FloatTensor([0.25136814, 0.24611233, 0.24406359]).unsqueez
 GTA_small_mean_cuda = torch.FloatTensor([0.5083843,  0.502183,   0.48381886]).to(device).unsqueeze(0).unsqueeze(2).unsqueeze(3)
 GTA_small_std_cuda = torch.FloatTensor([0.25136814, 0.24611233, 0.24406359]).to(device).unsqueeze(0).unsqueeze(2).unsqueeze(3)
 
+# Some constants
+rgb_weights = torch.FloatTensor([65.481, 128.553, 24.966]).to(device)
+imagenet_mean = torch.FloatTensor([0.485, 0.456, 0.406]).unsqueeze(1).unsqueeze(2)
+imagenet_std = torch.FloatTensor([0.229, 0.224, 0.225]).unsqueeze(1).unsqueeze(2)
+imagenet_mean_cuda = torch.FloatTensor([0.485, 0.456, 0.406]).to(device).unsqueeze(0).unsqueeze(2).unsqueeze(3)
+imagenet_std_cuda = torch.FloatTensor([0.229, 0.224, 0.225]).to(device).unsqueeze(0).unsqueeze(2).unsqueeze(3)
+
+
+
 def convert_image(img, source, target):
     """
     Convert an image from a source format to a target format.
@@ -26,7 +35,7 @@ def convert_image(img, source, target):
     :return: converted image
     """
     assert source in {'pil', '[0, 1]', '[-1, 1]'}, "Cannot convert from source format %s!" % source
-    assert target in {'pil', '[0, 255]', '[0, 1]', '[-1, 1]', 'gta-small-norm',
+    assert target in {'pil', '[0, 255]', '[0, 1]', '[-1, 1]', 'gta-small-norm','imagenet-norm',
                       'y-channel'}, "Cannot convert to target format %s!" % target
 
     # Convert from source to [0, 1]
@@ -57,6 +66,12 @@ def convert_image(img, source, target):
             img = (img - GTA_small_mean) / GTA_small_std
         elif img.ndimension() == 4:
             img = (img - GTA_small_mean_cuda) / GTA_small_std_cuda
+
+    elif target == 'imagenet-norm':
+        if img.ndimension() == 3:
+            img = (img - imagenet_mean) / imagenet_std
+        elif img.ndimension() == 4:
+            img = (img - imagenet_mean_cuda) / imagenet_std_cuda
 
     # elif target == 'y-channel':
     #     # Based on definitions at https://github.com/xinntao/BasicSR/wiki/Color-conversion-in-SR
